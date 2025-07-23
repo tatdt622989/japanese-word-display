@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日文單字詳細資料</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .word-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .word-header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .word-main {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--vscode-textLink-foreground);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            min-height: 1.5em;
+            line-height: 1.3;
+        }
+        .japanese-variant {
+            color: var(--vscode-textLink-foreground);
+            font-weight: 600;
+            margin: 0 8px;
+        }
+        .single-japanese {
+            color: var(--vscode-textLink-foreground);
+        }
+        .level-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--vscode-textLink-foreground);
+            color: var(--vscode-button-foreground);
+            padding: 12px 18px;
+            border-radius: 6px;
+            font-size: 1.3em;
+            font-weight: 600;
+            border: 1px solid var(--vscode-widget-border);
+            z-index: 10;
+            letter-spacing: 0.5px;
+        }
+        .level-badge:hover {
+            opacity: 0.9;
+        }
+        .reading {
+            font-size: 1.4em;
+            color: var(--vscode-descriptionForeground);
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .info-section {
+            margin-bottom: 20px;
+            padding: 18px;
+            border-left: 5px solid var(--vscode-textLink-foreground);
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .info-label {
+            font-weight: bold;
+            color: var(--vscode-textLink-foreground);
+            margin-bottom: 8px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-content {
+            font-size: 1.3em;
+            color: var(--vscode-foreground);
+            margin-left: 0;
+        }
+        .examples-section {
+            margin-top: 25px;
+        }
+        .example-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: var(--vscode-input-background);
+            border-radius: 8px;
+            border: 1px solid var(--vscode-widget-border);
+        }
+        .example-japanese {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: var(--vscode-textLink-foreground);
+            margin-bottom: 8px;
+        }
+        .example-chinese {
+            color: var(--vscode-descriptionForeground);
+            font-size: 1.2em;
+            font-style: italic;
+        }
+        .part-of-speech {
+            display: inline-block;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 1em;
+            margin-right: 8px;
+            margin-bottom: 4px;
+        }
+        @media (max-width: 480px) {
+            .word-main {
+                font-size: 1.8em;
+            }
+            .japanese-variant {
+                font-size: 0.75em;
+                padding: 8px 14px;
+            }
+            .level-badge {
+                top: 5px;
+                right: 5px;
+                font-size: 1.1em;
+                padding: 10px 14px;
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="word-container">
+        <div class="word-header">
+            {{LEVEL_BADGE}}
+            <div class="word-main {{SINGLE_JAPANESE_CLASS}}">{{JAPANESE}}</div>
+            <div class="reading">{{READING}}</div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-label">中文</div>
+            <div class="info-content">{{CHINESE}}</div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-label">假名</div>
+            <div class="info-content">{{KANA}}</div>
+        </div>
+        
+        {{PART_OF_SPEECH_SECTION}}
+        
+        {{CATEGORY_SECTION}}
+        
+        {{EXAMPLES_SECTION}}
+    </div>
+</body>
+</html>
