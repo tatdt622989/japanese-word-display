@@ -46,7 +46,7 @@ A: 在 VS Code 設定中搜尋 "japanese-word-display"，調整「更新間隔�
 ## 回報問題
 
 如果您遇到任何問題或有功能建議，請透過以下方式聯繫：
-- GitHub Issues: [vscode-japanese-extension](https://github.com/your-username/vscode-japanese-extension)
+- GitHub Issues: [japanese-word-display](https://github.com/tatdt622989/japanese-word-display)
 - Email: support@6yuwei.com
 
 ## 關於
