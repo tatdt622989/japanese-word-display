@@ -3,6 +3,7 @@
 out/**
 node_modules/**
 src/**
+share/**
 .gitignore
 .yarnrc
 esbuild.js
@@ -14,3 +15,4 @@ vsc-extension-quickstart.md
 **/.vscode-test.*
 .env
 .env.*
+*.vsix

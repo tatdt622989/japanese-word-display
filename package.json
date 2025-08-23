@@ -2,7 +2,7 @@
   "name": "japanese-word-display",
   "displayName": "Japanese Word Display",
   "description": "在 VS Code 狀態列顯示日文單字，支援詳細資料和練習功能的日語學習擴展",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "6yuwei",
   "author": "6yuwei",
   "license": "MIT",

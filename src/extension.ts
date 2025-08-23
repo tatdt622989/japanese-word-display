@@ -28,11 +28,6 @@ interface VocabularyResponse {
 	};
 }
 
-// QuickPick 項目接口
-interface QuizQuickPickItem extends vscode.QuickPickItem {
-	answerData: any;
-}
-
 // 日文單字管理類
 class JapaneseWordManager {
 	private statusBarItem: vscode.StatusBarItem;
@@ -177,7 +172,14 @@ class JapaneseWordManager {
 				? this.currentWord.kana.join(', ')
 				: this.currentWord.kana;
 			
-			const text = `$(book) ${japanese} (${reading})`;
+			// 限制狀態欄顯示的長度，如果太長就截斷
+			const maxLength = 20; // 設定最大顯示長度
+			const displayJapanese = japanese.length > maxLength ? 
+				japanese.substring(0, maxLength) + '...' : japanese;
+			const displayReading = reading.length > maxLength ? 
+				reading.substring(0, maxLength) + '...' : reading;
+			
+			const text = `$(book) ${displayJapanese} (${displayReading})`;
 			
 			// 創建詳細的懸停提示
 			const hoverTooltip = new vscode.MarkdownString();
@@ -244,9 +246,6 @@ class JapaneseWordManager {
 		}
 
 		const word = this.currentWord;
-		const readings = Array.isArray(word.reading) ? word.reading.join(', ') : word.reading;
-		const kanas = Array.isArray(word.kana) ? word.kana.join(', ') : word.kana;
-		const chinese = Array.isArray(word.chinese) ? word.chinese.join(', ') : word.chinese;
 		const japanese = Array.isArray(word.japanese) ? word.japanese.join('／') : word.japanese;
 
 		// 創建 Webview 面板顯示詳細資料
@@ -270,6 +269,21 @@ class JapaneseWordManager {
 		const japanese = Array.isArray(word.japanese) 
 			? word.japanese.map(j => `<span class="japanese-variant">${j}</span>`).join('')
 			: word.japanese;
+		// 分享連結
+		const shareLink = `https://word.6yuwei.com/${encodeURIComponent(word.id)}`;
+		const shareSection = `
+			<div class="share-section">
+				<div class="share-header">
+					<div class="info-label">分享此單字</div>
+					<button id="copy-share-link-btn" class="share-btn">
+						<span class="btn-icon">📋</span>
+						<span class="btn-text">複製分享連結</span>
+					</button>
+					<span id="copy-status" class="copy-status"></span>
+				</div>
+				<div id="share-link-text" class="share-link-hidden">${shareLink}</div>
+			</div>
+		`;
 		
 		// 處理等級標籤
 		const levelBadge = word.level ? `<div class="level-badge">${word.level}</div>` : '';
@@ -327,7 +341,8 @@ class JapaneseWordManager {
 				.replace('{{KANA}}', kanas)
 				.replace('{{PART_OF_SPEECH_SECTION}}', partOfSpeechSection)
 				.replace('{{CATEGORY_SECTION}}', categorySection)
-				.replace('{{EXAMPLES_SECTION}}', examplesSection);
+				.replace('{{EXAMPLES_SECTION}}', examplesSection)
+				.replace('{{SHARE_SECTION}}', shareSection);
 			
 			return html;
 		} catch (error) {
@@ -342,6 +357,7 @@ class JapaneseWordManager {
 		const readings = Array.isArray(word.reading) ? word.reading.join(', ') : word.reading;
 		const chinese = Array.isArray(word.chinese) ? word.chinese.join(', ') : word.chinese;
 		const japanese = Array.isArray(word.japanese) ? word.japanese.join(' / ') : word.japanese;
+		const shareLink = `https://word.6yuwei.com/${encodeURIComponent(word.id)}`;
 		
 		return `<!DOCTYPE html>
 		<html lang="zh-TW">
@@ -351,15 +367,39 @@ class JapaneseWordManager {
 			<title>日文單字詳細資料</title>
 			<style>
 				body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 20px; }
-				.word { font-size: 2em; font-weight: bold; margin-bottom: 10px; }
+				.share { margin-bottom: 15px; padding: 6px 12px; border: 1px solid var(--vscode-widget-border); border-radius: 4px; text-align: right; background: var(--vscode-editor-background); opacity: 0.8; }
+				.share:hover { opacity: 1; }
+				.share-btn { cursor: pointer; background: var(--vscode-input-background); color: var(--vscode-foreground); border: 1px solid var(--vscode-widget-border); padding: 6px 12px; border-radius: 4px; font-size: 1.2em; opacity: 0.85; transition: all 0.2s; }
+				.share-btn:hover { background: var(--vscode-list-hoverBackground); color: var(--vscode-foreground); opacity: 1; }
+				.word { font-size: 2em; font-weight: bold; margin-bottom: 10px; word-break: break-word; overflow-wrap: break-word; max-width: 100%; }
 				.info { margin: 10px 0; font-size: 1.2em; }
+				@media (max-width: 600px) { .word { font-size: 1.6em; } .share-btn { font-size: 0.9em; padding: 5px 10px; } }
 			</style>
 		</head>
 		<body>
+			<div class="share">
+				<button id="copy-share-link-btn" class="share-btn">📋 複製分享連結</button>
+				<span id="copy-status" style="margin-left: 10px; font-size: 0.8em; color: var(--vscode-textLink-foreground);"></span>
+				<div id="share-link-text" style="display: none;">${shareLink}</div>
+			</div>
 			<div class="word">${japanese}</div>
 			<div class="info"><strong>讀音:</strong> ${readings}</div>
 			<div class="info"><strong>中文:</strong> ${chinese}</div>
 			${word.level ? `<div class="info"><strong>等級:</strong> ${word.level}</div>` : ''}
+			<script>
+				document.getElementById('copy-share-link-btn').addEventListener('click', async () => {
+					const linkEl = document.getElementById('share-link-text');
+					const statusEl = document.getElementById('copy-status');
+					try {
+						await navigator.clipboard.writeText(linkEl.textContent);
+						statusEl.textContent = '已複製！';
+						setTimeout(() => statusEl.textContent = '', 2000);
+					} catch(e) {
+						statusEl.textContent = '複製失敗';
+						setTimeout(() => statusEl.textContent = '', 2000);
+					}
+				});
+			</script>
 		</body>
 		</html>`;
 	}
