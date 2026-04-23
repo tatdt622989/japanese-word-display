@@ -4,6 +4,10 @@ import * as vscode from 'vscode';
 import * as https from 'https';
 import * as http from 'http';
 
+const EXTENSION_CONFIG_NAMESPACE = 'japanese-word-display';
+const DEFAULT_API_BASE_URL = 'https://ai-tutor.6yuwei.com/api';
+const DEFAULT_UPDATE_INTERVAL_SECONDS = 30;
+
 // 日文單字接口
 interface JapaneseWord {
 	id: string;
@@ -28,13 +32,34 @@ interface VocabularyResponse {
 	};
 }
 
+interface ExtensionConfiguration {
+	apiBaseUrl: string;
+	updateIntervalSeconds: number;
+	enableStatusBar: boolean;
+}
+
+function getExtensionConfiguration(): ExtensionConfiguration {
+	const configuration = vscode.workspace.getConfiguration(EXTENSION_CONFIG_NAMESPACE);
+	const apiBaseUrl = configuration.get<string>('apiBaseUrl', DEFAULT_API_BASE_URL).trim() || DEFAULT_API_BASE_URL;
+	const configuredUpdateInterval = configuration.get<number>('updateInterval', DEFAULT_UPDATE_INTERVAL_SECONDS);
+	const updateIntervalSeconds = Number.isFinite(configuredUpdateInterval) && configuredUpdateInterval > 0
+		? configuredUpdateInterval
+		: DEFAULT_UPDATE_INTERVAL_SECONDS;
+
+	return {
+		apiBaseUrl,
+		updateIntervalSeconds,
+		enableStatusBar: configuration.get<boolean>('enableStatusBar', true)
+	};
+}
+
 // 日文單字管理類
 class JapaneseWordManager {
 	private statusBarItem: vscode.StatusBarItem;
 	private words: JapaneseWord[] = [];
 	private currentWord: JapaneseWord | null = null;
 	private updateInterval: NodeJS.Timeout | null = null;
-	private readonly apiBaseUrl = 'https://ai-tutor.6yuwei.com/api';
+	private config: ExtensionConfiguration = getExtensionConfiguration();
 
 	constructor() {
 		// 創建狀態列項目
@@ -46,6 +71,14 @@ class JapaneseWordManager {
 		this.statusBarItem.command = 'japanese-word-display.showWordDetail';
 		this.statusBarItem.name = 'Japanese Word';
 		this.statusBarItem.tooltip = new vscode.MarkdownString('**日文單字學習工具**\n\n懸停查看詳情，點擊查看完整資料');
+		this.applyConfiguration();
+	}
+
+	private applyConfiguration(): void {
+		this.config = getExtensionConfiguration();
+		if (!this.config.enableStatusBar) {
+			this.statusBarItem.hide();
+		}
 	}
 
 	// 從後端 API 載入單字數據
@@ -115,7 +148,7 @@ class JapaneseWordManager {
 	// 發送 API 請求
 	private makeApiRequest(endpoint: string): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const url = `${this.apiBaseUrl}${endpoint}`;
+			const url = `${this.config.apiBaseUrl}${endpoint}`;
 			const urlObj = new URL(url);
 			const requestModule = urlObj.protocol === 'https:' ? https : http;
 
@@ -154,6 +187,11 @@ class JapaneseWordManager {
 
 	// 更新狀態列顯示
 	updateStatusBar(): void {
+		if (!this.config.enableStatusBar) {
+			this.statusBarItem.hide();
+			return;
+		}
+
 		console.log('正在更新狀態列，當前單字數量:', this.words.length);
 		this.currentWord = this.getRandomWord();
 		console.log('選中的單字:', this.currentWord);
@@ -223,11 +261,16 @@ class JapaneseWordManager {
 
 	// 開始自動更新
 	startAutoUpdate(): void {
+		this.stopAutoUpdate();
+		if (!this.config.enableStatusBar) {
+			this.statusBarItem.hide();
+			return;
+		}
+
 		this.updateStatusBar();
-		// 每 30 秒更新一次單字
 		this.updateInterval = setInterval(() => {
 			this.updateStatusBar();
-		}, 30000);
+		}, this.config.updateIntervalSeconds * 1000);
 	}
 
 	// 停止自動更新
@@ -410,6 +453,29 @@ class JapaneseWordManager {
 		this.statusBarItem.dispose();
 	}
 
+	async refreshConfiguration(): Promise<void> {
+		const previousConfiguration = this.config;
+		this.applyConfiguration();
+
+		const apiBaseUrlChanged = previousConfiguration.apiBaseUrl !== this.config.apiBaseUrl;
+		const updateIntervalChanged = previousConfiguration.updateIntervalSeconds !== this.config.updateIntervalSeconds;
+		const statusBarChanged = previousConfiguration.enableStatusBar !== this.config.enableStatusBar;
+
+		if (apiBaseUrlChanged) {
+			await this.loadVocabularyData();
+		}
+
+		if (!this.config.enableStatusBar) {
+			this.stopAutoUpdate();
+			this.statusBarItem.hide();
+			return;
+		}
+
+		if (apiBaseUrlChanged || updateIntervalChanged || statusBarChanged) {
+			this.startAutoUpdate();
+		}
+	}
+
 	// 獲取當前單字
 	getCurrentWord(): JapaneseWord | null {
 		return this.currentWord;
@@ -524,6 +590,14 @@ export function activate(context: vscode.ExtensionContext) {
 		await showExampleQuiz();
 	});
 
+	const configurationDisposable = vscode.workspace.onDidChangeConfiguration(async (event) => {
+		if (!event.affectsConfiguration(EXTENSION_CONFIG_NAMESPACE)) {
+			return;
+		}
+
+		await wordManager.refreshConfiguration();
+	});
+
 	// 載入單字數據並開始顯示
 	wordManager.loadVocabularyData().then(() => {
 		wordManager.startAutoUpdate();
@@ -534,6 +608,7 @@ export function activate(context: vscode.ExtensionContext) {
 		refreshDisposable,
 		startQuizDisposable,
 		showExamplesDisposable,
+		configurationDisposable,
 		wordManager
 	);
 }
@@ -620,7 +695,7 @@ function getWordsWithExamples(): JapaneseWord[] {
 // 出題功能
 async function startQuiz(): Promise<void> {
 	try {
-		if (!wordManager || wordManager.getCurrentWord() === null) {
+		if (!wordManager || wordManager.getWordsCount() === 0) {
 			vscode.window.showWarningMessage('請先載入日文單字數據');
 			return;
 		}

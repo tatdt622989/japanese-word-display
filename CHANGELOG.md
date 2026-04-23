@@ -5,6 +5,18 @@
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)，
 此專案遵循 [語義化版本控制](https://semver.org/lang/zh-TW/)。
 
+## [0.0.9] - 2026-04-23
+
+### 修復
+- 修復 `japanese-word-display.updateInterval` 設定未生效，更新間隔不再固定寫死為 30 秒
+- 修復修改設定後需要重載視窗才會套用的問題，現在會即時重建更新計時器
+- 修復關閉狀態列後練習功能可能無法啟動的檢查邏輯
+
+### 改進
+- 讓 `apiBaseUrl` 與 `enableStatusBar` 設定真正接入執行邏輯
+- 為 `japanese-word-display.updateInterval` 增加最小值限制，避免無效設定值
+- 同步校正套件版本資訊，避免 `package-lock.json` 與套件版本不一致
+
 ## [0.0.8] - 2025-08-23
 
 ### 改進

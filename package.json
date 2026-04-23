@@ -2,7 +2,7 @@
   "name": "japanese-word-display",
   "displayName": "Japanese Word Display",
   "description": "在 VS Code 狀態列顯示日文單字，支援詳細資料和練習功能的日語學習擴展",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "6yuwei",
   "author": "6yuwei",
   "license": "MIT",
@@ -57,6 +57,7 @@
         "japanese-word-display.updateInterval": {
           "type": "number",
           "default": 30,
+          "minimum": 1,
           "description": "單字更新間隔（秒）"
         },
         "japanese-word-display.enableStatusBar": {
